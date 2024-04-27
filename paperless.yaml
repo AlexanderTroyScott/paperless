@@ -1,0 +1,40 @@
+version: "3.9"
+services:
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    volumes:
+      - /mnt/user/services/paperless/redis:/data
+    networks:
+      - reverse-proxy
+        
+  postgres:
+    image: postgres:16.2-bullseye
+    networks:
+      - reverse-proxy
+    restart: unless-stopped
+    volumes:
+      -  /mnt/user/postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_USER: postgres_user
+      POSTGRES_DB: paperless
+
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - postgres
+    ports:
+      - "8000:8000"
+    volumes:
+      - /mnt/user/services/paperless/data:/usr/src/paperless/data
+      - /mnt/user/vault/documents:/usr/src/paperless/media
+      - /mnt/user/vault/exports:/usr/src/paperless/export
+      - /mnt/user/scans:/usr/src/paperless/consume
+    environment:
+      PAPERLESS_REDIS: redis://redis:6379
+      PAPERLESS_DBHOST: postgres
+    networks:
+      - reverse-proxy
