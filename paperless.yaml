@@ -3,57 +3,29 @@ version: "3.9"
 networks:
   reverse-proxy:
     external: true
-  paperless:
 
 services:
-  redis:
-    image: redis:alpine
-#    volumes:
-#      - /mnt/user/services/paperless/redis:/data
-    networks:
-      - paperless
-
-  adminer:
-    image: adminer:latest
-    ports:
-      - 9001:8080
-    networks:
-      - reverse-proxy
-      - paperless
-
-  postgres:
-    image: postgres:16.2-bullseye
-    networks:
-      - paperless
-    volumes:
-      -  /mnt/user/postgres:/var/lib/postgresql/data
-    environment:
-      POSTGRES_PASSWORD: postgres_password
-      POSTGRES_USER: postgres_user
-      POSTGRES_DB: paperless
-
   paperless:
     image: ghcr.io/paperless-ngx/paperless-ngx:latest
-#    user: "root"
-    depends_on:
-      - redis
-      - postgres
     ports:
       - "8000:8000"
     volumes:
-      - /mnt/user/services/paperless/data:/usr/src/paperless/data
+      - /mnt/user/docker/volumes/paperless:/usr/src/paperless/data
       - /mnt/user/vault/documents:/usr/src/paperless/media
       - /mnt/user/vault/exports:/usr/src/paperless/export
-      - /mnt/user/scans:/usr/src/paperless/consume
+      - /mnt/user/scan:/usr/src/paperless/consume
     environment:
-      PAPERLESS_REDIS: redis://redis:6379
-      PAPERLESS_DBHOST: postgres
+      PAPERLESS_REDIS: redis://unraid.lan:6379
+      PAPERLESS_REDIS_PREFIX: paperless
+      PAPERLESS_DBENGINE: postgresql
+      PAPERLESS_DBHOST: unraid.lan #e.g. 192.168.2.2
+      PAPERLESS_DBPORT: 5432
+      PAPERLESS_DBNAME: paperless
       PAPERLESS_DBUSER: postgres_user
       PAPERLESS_DBPASS: postgres_password
-      USERMAP_UID: 0
-      USERMAP_GID: 0
+      USERMAP_UID: 99
+      USERMAP_GID: 100
       PAPERLESS_ADMIN_USER: admin
       PAPERLESS_ADMIN_PASSWORD: admin
     networks:
       - reverse-proxy
-      - paperless
